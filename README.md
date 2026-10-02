@@ -1,5 +1,7 @@
 # POLARIS: Per-Kernel Online Tuning of Concurrent PIM/CPU Memory Controllers
 
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.23093491.svg)](https://doi.org/10.5281/zenodo.23093491)
+
 This repository contains POLARIS and the scripts that reproduce every result in the letter
 *"POLARIS: Per-Kernel Online Tuning of Concurrent PIM/CPU Memory Controllers on Mobile Devices"*.
 
@@ -92,6 +94,21 @@ COSM_ROOT=... python3 compare_live.py --tag conv --app 10 --emulated ../data/emu
 * COSM's simulator occasionally crashes (segmentation fault) for `n_PTL = 16` with a long idle threshold; the
   analyses average each setting over the rotations it has.
 * Results reproduce statistically, not bit-for-bit.
+
+## Authors
+
+* Karthikeya Garaga [![ORCID](https://img.shields.io/badge/ORCID-0009--0005--7519--9362-A6CE39?logo=orcid&logoColor=white)](https://orcid.org/0009-0005-7519-9362)
+* Madhav Rao [![ORCID](https://img.shields.io/badge/ORCID-0000--0003--2278--9148-A6CE39?logo=orcid&logoColor=white)](https://orcid.org/0000-0003-2278-9148)
+
+Department of Electronics and Communication Engineering, International Institute of Information Technology Bangalore, India
+
+## Citation
+
+If you use this artifact, please cite it as:
+
+> K. Garaga and M. Rao, "POLARIS: Per-Kernel Online Tuning of Concurrent PIM/CPU Memory Controllers on Mobile Devices (artifact)," Zenodo, version 1.0.0, 2026. doi:10.5281/zenodo.23093491
+
+GitHub's "Cite this repository" button (from `CITATION.cff`) gives the same reference in BibTeX and APA.
 
 ## License
 
