@@ -1,0 +1,99 @@
+--- a/simulations/simulator/Simulator.py
++++ b/simulations/simulator/Simulator_polaris.py
+@@ -73,7 +73,21 @@
+ parser.add_argument("--nrcd", type=int, required=False, default=None)
+ parser.add_argument("--nrp", type=int, required=False, default=None)
+ parser.add_argument("--auto-division", action="store_true")
++# ---- POLARIS: runtime tuning of COSM's parameters at PIM-kernel granularity
++parser.add_argument("--agent-state", type=str, default="", help="POLARIS state file (json); enables POLARIS mode")
++parser.add_argument("--agent-mode", type=str, default="ts", help="ts (POLARIS) | fixed | random | tab | factored")
++parser.add_argument("--agent-budget", type=float, default=0.02, help="CPU-slowdown budget (fraction)")
++parser.add_argument("--agent-seed", type=int, default=1)
++parser.add_argument("--agent-kw", type=str, default="", help="extra Agent kwargs 'k=v,...'")
++parser.add_argument("--agent-log", type=str, default="", help="per-kernel decision log")
++parser.add_argument("--agent-app", type=str, default="", help="CPU application id; POLARIS keeps one model per application")
++parser.add_argument("--cpu-trace-variants", type=str, default="", help="comma list of CPU traces; one is drawn per kernel invocation")
++parser.add_argument("--fixed-config", type=str, default="", help="task_len:pred_th:bus_th:io_send_interval:idle_threshold for every kernel")
++parser.add_argument("--trace-seed", type=int, default=None, help="seed for the PIM trace generator's operand placement")
+ args = parser.parse_args()
++if args.trace_seed is not None:
++    import random as _random
++    _random.seed(args.trace_seed)
+ 
+ 
+ 
+@@ -274,7 +288,73 @@
+             val.append(ck + str(i))
+         result_dict[key] = val
+     
+-    if args.pim_type != 0 and args.pim_type != 3:
++    if args.agent_state:
++        # ---- POLARIS mode: one decision per PIM kernel invocation (concurrent run + CPU-only reference run)
++        import copy, glob, json, random
++        from polaris_agent import Agent
++        kw = {}
++        for kv in filter(None, args.agent_kw.split(",")):
++            k, v = kv.split("=")
++            kw[k] = float(v) if v.replace(".", "", 1).replace("-", "", 1).isdigit() else v
++        agent = Agent(budget=args.agent_budget, seed=args.agent_seed, mode=args.agent_mode, **kw)
++        step = 0
++        if os.path.exists(args.agent_state):
++            agent.load(args.agent_state)
++            step = json.load(open(args.agent_state)).get("step", 0)
++        env_rng = random.Random(1000003 * args.agent_seed + step)
++        variants = [v for v in args.cpu_trace_variants.split(",") if v] or [args.cpu_trace]
++        rc = ResultCollector(update_config, config_path, 1, dram_config, DNN.layer_num, args.cpu_trace)
++        rc.redirect_print(PrintToLog(logger))
++        rc_cpu = ResultCollector(update_config, config_path, 0, dram_config, DNN.layer_num, args.cpu_trace)
++        rc_cpu.redirect_print(PrintToLog(logger))
++        logf = open(args.agent_log, "a") if args.agent_log else None
++        # the PIM command length is baked into the PIM trace, so traces are generated per command length,
++        # lazily, for the lengths actually selected (the PIM runtime emits commands at the chosen length)
++        trace_sets = {args.pim_task_length: (layer_paths, tail_paths)}
++        def traces_for(T):
++            if T not in trace_sets:
++                cfgT = copy.copy(dram_config)
++                cfgT.pim_task_length = T
++                out = result_path + f"tl{T}/"
++                os.makedirs(out, exist_ok=True)
++                trace_sets[T] = get_network(args, cfgT, print_func=PrintToLog(logger)).gen_trace(out, "", block_size=args.pipeline_block_size)
++            return trace_sets[T]
++        def apply(cfg):
++            T, p, b, io, idle = map(int, cfg.split(":"))
++            args.pim_task_length = T
++            args.pred_th, args.bus_th, args.io_send_interval, args.idle_threshold = p, b, io, idle
++            return T
++        kernels = [(k, 0, rc.simulate_layer, rc_cpu.simulate_layer, DNN.layer_num) for k in range(len(layer_paths))] + \
++                  [(k, 1, rc.simulate_tail, rc_cpu.simulate_tail, 1) for k in range(len(tail_paths))]
++        for k, part, run_c, run_cpu, weight in kernels:
++            ctx = args.agent_app + "|" + (layer_paths if part == 0 else tail_paths)[k][0]
++            cfg = args.fixed_config or agent.choose(ctx)
++            trace = env_rng.choice(variants)
++            T = apply(cfg)
++            args.cpu_trace = trace
++            name, pth, sc = traces_for(T)[part][k]
++            before = rc.layer_data.latency + rc.tail_data.latency
++            res = run_c(name, pth, sc, iter_, print_info=True)
++            lat = rc.layer_data.latency + rc.tail_data.latency - before
++            before = rc_cpu.layer_data.latency + rc_cpu.tail_data.latency
++            run_cpu(name, pth, sc, iter_, print_info=True, prefix="cpu_ideal_", cpu_insts=res["cpu_insts"])
++            cpu_lat = rc_cpu.layer_data.latency + rc_cpu.tail_data.latency - before
++            if not args.fixed_config:
++                agent.update(ctx, cfg, lat, cpu_lat, weight)
++            if logf:
++                logf.write(f"{step} {ctx} {cfg} {trace} {lat:.8g} {cpu_lat:.8g} {weight} {agent.mu(ctx):.4f}\n")
++        agent.end_decode()
++        rc.summarize("")
++        rc_cpu.summarize("cpu_ideal")
++        print("cpu degradation: ", rc_cpu.total_latency / rc.total_latency, "x")
++        if logf:
++            logf.close()
++        for f in glob.glob(result_path + "**/pim*.trace", recursive=True):
++            os.remove(f)
++        if not args.fixed_config:
++            agent.save(args.agent_state)
++            d = json.load(open(args.agent_state)); d["step"] = step + 1; json.dump(d, open(args.agent_state, "w"))
++    elif args.pim_type != 0 and args.pim_type != 3:
+         # simulate layer
+         result_collector = ResultCollector(update_config, config_path, args.pim_type if args.pim_type != 4 else 1, dram_config, DNN.layer_num, args.cpu_trace)
+         result_collector.redirect_print(PrintToLog(logger))
