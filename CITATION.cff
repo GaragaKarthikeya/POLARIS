@@ -1,0 +1,20 @@
+cff-version: 1.2.0
+message: "If you use POLARIS, please cite it as below."
+title: "POLARIS: Per-Kernel Online Tuning of Concurrent PIM/CPU Memory Controllers on Mobile Devices"
+type: software
+license: MIT
+authors:
+  - family-names: Garaga
+    given-names: Karthikeya
+    affiliation: International Institute of Information Technology Bangalore
+    orcid: "https://orcid.org/0009-0005-7519-9362"
+  - family-names: Rao
+    given-names: Madhav
+    affiliation: International Institute of Information Technology Bangalore
+    orcid: "https://orcid.org/0000-0003-2278-9148"
+repository-code: "https://github.com/GaragaKarthikeya/POLARIS"
+keywords:
+  - processing-in-memory
+  - memory scheduling
+  - mobile systems
+  - online learning

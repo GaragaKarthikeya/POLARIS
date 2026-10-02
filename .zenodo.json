@@ -1,0 +1,33 @@
+{
+  "title": "POLARIS: Per-Kernel Online Tuning of Concurrent PIM/CPU Memory Controllers on Mobile Devices (artifact)",
+  "description": "Runtime agent that tunes the parameters of COSM's concurrent PIM/CPU memory controller at every PIM kernel launch, with the scripts and data that reproduce all results of the accompanying IEEE Computer Architecture Letters paper. Installs on top of COSM's public artifact (doi:10.5281/zenodo.19660293) without modifying its scheduling logic.",
+  "upload_type": "software",
+  "license": "MIT",
+  "creators": [
+    {
+      "name": "Garaga, Karthikeya",
+      "affiliation": "International Institute of Information Technology Bangalore",
+      "orcid": "0009-0005-7519-9362"
+    },
+    {
+      "name": "Rao, Madhav",
+      "affiliation": "International Institute of Information Technology Bangalore",
+      "orcid": "0000-0003-2278-9148"
+    }
+  ],
+  "keywords": [
+    "processing-in-memory",
+    "memory scheduling",
+    "mobile systems",
+    "online learning",
+    "LLM inference",
+    "Ramulator"
+  ],
+  "related_identifiers": [
+    {
+      "identifier": "10.5281/zenodo.19660293",
+      "relation": "isSupplementTo",
+      "scheme": "doi"
+    }
+  ]
+}

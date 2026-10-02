@@ -21,11 +21,15 @@ POLARIS does **not** modify COSM's scheduling logic. It is installed on top of C
 | `scripts/workloads.py` | Workloads, trace rotations, and the 405-setting parameter grid. |
 | `scripts/sweep.py`, `scripts/run_fixed.sh` | Simulate all 405 static settings x 4 CPU workloads x 5 trace rotations (8100 runs). |
 | `scripts/parse_sweep.py` | Collects the sweep into `data/sweep.json`. |
-| `scripts/static_gap.py` | Cost of a static setting under a CPU budget (per-application best vs. best single setting vs. COSM default). |
-| `scripts/emulate.py` | Trace-driven emulation of POLARIS on the sweep results (one application, or OS switching between applications). |
+| `scripts/static_gap.py` | Cost of a static setting under a CPU budget (per-application best vs. best single setting vs. COSM default), optionally chosen and scored on disjoint trace rotations. |
+| `scripts/observations.py` | Replay variability, parameter interactions (one-at-a-time tuning), per-kernel reward noise. |
+| `scripts/emulate.py` | Replays POLARIS's decisions against the sweep results (one application, or the OS switching between applications). |
 | `scripts/run_polaris.py` | Live POLARIS sessions in the simulator. |
-| `figures/` | Plotting scripts and the TikZ source of the overview figure. |
-| `data/` | Our sweep results, so the analyses and figures can be regenerated without simulation. |
+| `scripts/compare_live.py` | Compares live sessions with the replay. |
+| `figures/` | Plotting scripts (`fig_static.py`, `fig_converge.py`, `fig_switch.py`) and the TikZ source of the overview figure. |
+| `data/sweep.json` | All 8100 sweep runs (per-kernel latency and CPU-alone latency). |
+| `data/emulate/` | Replay results behind the convergence, switching, and ablation numbers. |
+| `data/live/` | Decision logs of six live sessions on the unmodified artifact and their comparison with the replay. |
 
 ## Requirements
 
@@ -53,7 +57,9 @@ python3 static_gap.py --budgets 1.5,2,3,5,100                  # Section II: cos
 python3 static_gap.py --select abc --evaluate de              # same, settings chosen and scored on disjoint rotations
 python3 emulate.py --app 10 --decodes 200 --seeds 10          # convergence with Tencent Meeting on the CPU
 python3 emulate.py --schedule 10,22,51,sp70 --slice 40 --rounds 3 --seeds 10   # OS switches applications
-python3 ../figures/fig_static.py                               # figures are written to figures/out/
+python3 emulate.py --app 10 --mode factored --seeds 10        # ablations: factored, random, --agent-kw pairwise=1
+python3 observations.py                                       # replay variability, interactions, reward noise
+python3 ../figures/fig_static.py; python3 ../figures/fig_converge.py; python3 ../figures/fig_switch.py   # -> figures/out/
 ```
 
 **Regenerating the sweep:**
@@ -71,7 +77,11 @@ COSM_ROOT=... python3 run_polaris.py --tag switch --seed 1 --schedule 10,22,51,s
 ```
 
 Each decode step is one simulator invocation; the agent's state (`state.json`) and a per-kernel decision log
-(`decisions.log`) are kept in `simulations/results_polaris/session_<tag>-s<seed>/`.
+(`decisions.log`) are kept in `simulations/results_polaris/session_<tag>-s<seed>/`. Compare them with the replay:
+
+```bash
+COSM_ROOT=... python3 compare_live.py --tag conv --app 10 --emulated ../data/emulate/converge_10.json
+```
 
 ## Notes on variability
 
@@ -79,6 +89,8 @@ Each decode step is one simulator invocation; the agent's state (`state.json`) a
   setting on five rotations of each CPU trace (`scripts/make_rotations.py`) and report means.
 * COSM's PIM trace generator places PIM operands in randomly drawn rows without a fixed seed, so repeated runs of
   the same setting differ slightly. `Simulator_polaris.py` accepts `--trace-seed` to fix this for POLARIS runs.
+* COSM's simulator occasionally crashes (segmentation fault) for `n_PTL = 16` with a long idle threshold; the
+  analyses average each setting over the rotations it has.
 * Results reproduce statistically, not bit-for-bit.
 
 ## License

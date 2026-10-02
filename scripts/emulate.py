@@ -30,11 +30,11 @@ a = ap.parse_args()
 D = json.load(open(a.data))
 KERNELS = sorted(next(iter(next(iter(D[next(iter(D))].values())).values()))['L'])
 W = {k: (1 if k.endswith('output') else 16) for k in KERNELS}
-ROT = {t: sorted(set.intersection(*[set(v) for v in D[t].values()])) for t in D}
+ROT = {t: {c: sorted(v) for c, v in D[t].items()} for t in D}     # rotations each setting has (a few runs crash in COSM)
 
 def expected(app, choice):
-    lat = sum(W[k] * np.mean([D[app][choice[k]][r]['L'][k][0] for r in ROT[app]]) for k in KERNELS)
-    cl = sum(W[k] * np.mean([D[app][choice[k]][r]['L'][k][1] for r in ROT[app]]) for k in KERNELS)
+    lat = sum(W[k] * np.mean([D[app][choice[k]][r]['L'][k][0] for r in ROT[app][choice[k]]]) for k in KERNELS)
+    cl = sum(W[k] * np.mean([D[app][choice[k]][r]['L'][k][1] for r in ROT[app][choice[k]]]) for k in KERNELS)
     return 1000 / lat, 100 * (1 - cl / lat)
 
 def run(args):
@@ -51,7 +51,7 @@ def run(args):
         for k in KERNELS:
             ctx = f'{app}|{k}'
             c = agent.choose(ctx)
-            r = env.choice(ROT[app])
+            r = env.choice(ROT[app][c])
             lat, cpu = D[app][c][r]['L'][k]
             agent.update(ctx, c, lat, cpu, W[k])
             choice[k] = c
@@ -68,7 +68,7 @@ if __name__ == '__main__':
         schedule = [a.app] * a.decodes
     with mp.get_context('fork').Pool(min(a.seeds, os.cpu_count())) as p:
         R = p.map(run, [(schedule, s) for s in range(1, a.seeds + 1)])
-    static = {t: {c: expected(t, {k: c for k in KERNELS}) for c in CONFIGS} for t in set(schedule)}
+    static = {t: {c: expected(t, {k: c for k in KERNELS}) for c in CONFIGS if c in D[t]} for t in set(schedule)}
     res = dict(schedule=schedule, budget=a.budget, mode=a.mode,
                thp=[[x[0] for x in r] for r in R], slow=[[x[1] for x in r] for r in R], believed=[[x[2] for x in r] for r in R],
                static={t: {c: v for c, v in s.items()} for t, s in static.items()})
@@ -76,7 +76,7 @@ if __name__ == '__main__':
     json.dump(res, open(out, 'w'))
     q = np.array(res['thp'])
     for t in sorted(set(schedule)):
-        ok = [c for c in CONFIGS if static[t][c][1] <= 100 * a.budget]
+        ok = [c for c in static[t] if static[t][c][1] <= 100 * a.budget]
         best = max(ok, key=lambda c: static[t][c][0])
         idx = [i for i, x in enumerate(schedule) if x == t]
         print(f'{t:5s} best static {best} {static[t][best][0]:.1f} | POLARIS first 10 {q[:, idx[:10]].mean():.1f}, last 20 {q[:, idx[-20:]].mean():.1f} '

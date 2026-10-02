@@ -8,8 +8,8 @@ Action        : a full controller config  task_len:pred:bus:io:idle  (405 combin
 Reward        : the kernel's own latency (decode latency is the sum of kernel latencies, so this is the
                 objective itself) with a Lagrangian penalty on the CPU slowdown: cost = lat * (1 + mu * (slow - b)).
 Learner       : contextual bandit (gamma = 0: one kernel's config does not change the next kernel's latency).
-                Per application, two Bayesian linear models over knob features (per-level one-hots + all pairwise
-                level combinations + per-kernel offset) predict log-latency and CPU slowdown. Thompson sampling
+                Per application, two Bayesian linear models over knob features (per-level one-hots + per-kernel
+                offset; pairwise level combinations are optional and did not help) predict log-latency and CPU slowdown. Thompson sampling
                 picks the config. mu (per application) follows dual ascent on the measured decode-level slowdown.
 """
 import json
@@ -40,7 +40,7 @@ def split_ctx(ctx):
 
 
 class Agent:
-    def __init__(self, budget=0.05, seed=1, mode='ts', start='128:16:12:480:0', pairwise=1, prior_sd=0.3,
+    def __init__(self, budget=0.05, seed=1, mode='ts', start='128:16:12:480:0', pairwise=0, prior_sd=0.3,
                  lat_noise=0.10, slow_noise=0.02, eta=1.0, mu_max=100.0, eps=0.1, budget_in_pct=0,
                  constraint='lagrange', margin_eta=0.25, ts_scale=0.3, mu0=5.0):
         self.budget = float(budget) / (100.0 if int(budget_in_pct) else 1.0)
