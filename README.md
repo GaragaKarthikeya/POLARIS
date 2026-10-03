@@ -17,7 +17,7 @@ POLARIS does **not** modify COSM's scheduling logic. It is installed on top of C
 
 | Path | What it is |
 |---|---|
-| `polaris/polaris_agent.py` | The agent: per-application Bayesian models with pairwise parameter interactions, Thompson sampling, Lagrangian CPU budget. Also contains the ablation policies (`fixed`, `random`, `tab`, `factored`). |
+| `polaris/polaris_agent.py` | The agent: per-application Bayesian linear models over one-hot parameter features and per-kernel offsets (pairwise interaction terms are optional and off by default), Thompson sampling, Lagrangian CPU budget. Also contains the ablation policies (`fixed`, `random`, `tab`, `factored`). |
 | `harness/simulator_polaris.patch` | Patch that turns COSM's `Simulator.py` into `Simulator_polaris.py`: one decision per PIM kernel, PIM traces generated at the selected command length, CPU-only reference run per kernel. |
 | `scripts/setup.sh` | Installs POLARIS into a COSM checkout, writes rotated CPU traces, builds the simulator. |
 | `scripts/workloads.py` | The three LLMs, twelve CPU workloads, trace rotations, and the 405-setting parameter grid (COSM's evaluation set). |
