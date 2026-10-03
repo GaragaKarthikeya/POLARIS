@@ -1,3 +1,11 @@
+2 live sessions x 60 decode steps; best static setting 64:32:6:960:50 (85.3 tok/s)
+steps   1- 10: live chosen-setting quality 1.068, live measured 1.070, live CPU 3.63% | replay quality 1.063, replay CPU 3.55%
+steps  11- 30: live chosen-setting quality 1.090, live measured 1.092, live CPU 3.17% | replay quality 1.113, replay CPU 2.81%
+steps  31- 60: live chosen-setting quality 1.052, live measured 1.033, live CPU 2.22% | replay quality 1.093, replay CPU 2.56%
+2 live sessions x 60 decode steps; best static setting 128:32:12:960:0 (184.4 tok/s)
+steps   1- 10: live chosen-setting quality 1.004, live measured 1.003, live CPU 3.66% | replay quality 0.964, replay CPU 3.29%
+steps  11- 30: live chosen-setting quality 0.995, live measured 0.998, live CPU 2.42% | replay quality 1.018, replay CPU 2.33%
+steps  31- 60: live chosen-setting quality 0.999, live measured 1.000, live CPU 2.09% | replay quality 1.010, replay CPU 2.13%
 4 live sessions x 60 decode steps; best static setting 128:16:12:960:0 (180.5 tok/s)
 steps   1- 10: live chosen-setting quality 0.911, live measured 0.909, live CPU 3.05% | replay quality 0.904, replay CPU 2.88%
 steps  11- 30: live chosen-setting quality 0.983, live measured 0.986, live CPU 2.30% | replay quality 1.002, replay CPU 2.25%

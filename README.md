@@ -20,25 +20,25 @@ POLARIS does **not** modify COSM's scheduling logic. It is installed on top of C
 | `polaris/polaris_agent.py` | The agent: per-application Bayesian models with pairwise parameter interactions, Thompson sampling, Lagrangian CPU budget. Also contains the ablation policies (`fixed`, `random`, `tab`, `factored`). |
 | `harness/simulator_polaris.patch` | Patch that turns COSM's `Simulator.py` into `Simulator_polaris.py`: one decision per PIM kernel, PIM traces generated at the selected command length, CPU-only reference run per kernel. |
 | `scripts/setup.sh` | Installs POLARIS into a COSM checkout, writes rotated CPU traces, builds the simulator. |
-| `scripts/workloads.py` | Workloads, trace rotations, and the 405-setting parameter grid. |
-| `scripts/sweep.py`, `scripts/run_fixed.sh` | Simulate all 405 static settings x 4 CPU workloads x 5 trace rotations (8100 runs). |
+| `scripts/workloads.py` | The three LLMs, twelve CPU workloads, trace rotations, and the 405-setting parameter grid (COSM's evaluation set). |
+| `scripts/sweep.py`, `scripts/run_fixed.sh` | Simulate all 405 static settings x 3 LLMs x 12 CPU workloads x 5 trace rotations (72,900 runs). |
 | `scripts/parse_sweep.py` | Collects the sweep into `data/sweep.json`. |
 | `scripts/static_gap.py` | Cost of a static setting under a CPU budget (per-application best vs. best single setting vs. COSM default), optionally chosen and scored on disjoint trace rotations. |
 | `scripts/observations.py` | Replay variability, parameter interactions (one-at-a-time tuning), per-kernel reward noise. |
-| `scripts/emulate.py` | Replays POLARIS's decisions against the sweep results (one application, or the OS switching between applications). |
+| `scripts/emulate.py`, `scripts/emulate_all.sh` | Replays POLARIS's decisions against the sweep results (one application, or the OS switching between applications). |
 | `scripts/run_polaris.py` | Live POLARIS sessions in the simulator. |
 | `scripts/compare_live.py` | Compares live sessions with the replay. |
 | `figures/` | Plotting scripts (`fig_static.py`, `fig_converge.py`, `fig_switch.py`) and the TikZ source of the overview figure. |
-| `data/sweep.json` | All 8100 sweep runs (per-kernel latency and CPU-alone latency). |
+| `data/sweep.json` | All 72,900 sweep runs (per-kernel latency and CPU-alone latency). |
 | `data/emulate/` | Replay results behind the convergence, switching, and ablation numbers. |
-| `data/live/` | Decision logs of six live sessions on the unmodified artifact and their comparison with the replay. |
+| `data/live/` | Decision logs of ten live sessions (all three LLMs) on the unmodified artifact and their comparison with the replay. |
 
 ## Requirements
 
 * Linux, x86-64. GCC 12+ and CMake 3.30+ (as required by COSM's artifact).
 * Python 3.10+ with `numpy`, `matplotlib`, `pyyaml` (`pip install -r requirements.txt`).
 * COSM's artifact: <https://doi.org/10.5281/zenodo.19660293>.
-* The full sweep takes about 2.5 hours on 24 cores and about 30 GB of disk while running.
+* The full sweep takes about 20 hours on 24 cores and about 10 GB of disk (only `simulation.log` is kept per run).
 
 ## Setup
 
@@ -57,11 +57,10 @@ All commands run from `scripts/`.
 ```bash
 python3 static_gap.py --budgets 1.5,2,3,5,100                  # Section II: cost of a static setting
 python3 static_gap.py --select abc --evaluate de              # same, settings chosen and scored on disjoint rotations
-python3 emulate.py --app 10 --decodes 200 --seeds 10          # convergence with Tencent Meeting on the CPU
-python3 emulate.py --schedule 10,22,51,sp70 --slice 40 --rounds 3 --seeds 10   # OS switches applications
-python3 emulate.py --app 10 --mode factored --seeds 10        # ablations: factored, random, --agent-kw pairwise=1
+bash emulate_all.sh 16                                        # every replay experiment of the letter -> data/emulate/
+python3 emulate.py --model deepseek --app 10 --decodes 200    # or a single one
 python3 observations.py                                       # replay variability, interactions, reward noise
-python3 ../figures/fig_static.py; python3 ../figures/fig_converge.py; python3 ../figures/fig_switch.py   # -> figures/out/
+for f in fig_all fig_budget fig_converge fig_switch; do python3 ../figures/$f.py; done   # -> figures/out/
 ```
 
 **Regenerating the sweep:**
@@ -106,7 +105,7 @@ Department of Electronics and Communication Engineering, International Institute
 
 If you use this artifact, please cite it as:
 
-> K. Garaga and M. Rao, "POLARIS: Per-Kernel Online Tuning of Concurrent PIM/CPU Memory Controllers on Mobile Devices (artifact)," Zenodo, version 1.0.0, 2026. doi:10.5281/zenodo.23093491
+> K. Garaga and M. Rao, "POLARIS: Per-Kernel Online Tuning of Concurrent PIM/CPU Memory Controllers on Mobile Devices (artifact)," Zenodo, 2026. doi:10.5281/zenodo.23093491 (all versions)
 
 GitHub's "Cite this repository" button (from `CITATION.cff`) gives the same reference in BibTeX and APA.
 

@@ -2,8 +2,8 @@ cff-version: 1.2.0
 message: "If you use POLARIS, please cite it as below."
 title: "POLARIS: Per-Kernel Online Tuning of Concurrent PIM/CPU Memory Controllers on Mobile Devices"
 type: software
-version: 1.0.0
-date-released: "2026-10-02"
+version: 1.1.0
+date-released: "2026-10-03"
 doi: 10.5281/zenodo.23093491
 license: MIT
 authors:

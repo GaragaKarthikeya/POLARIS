@@ -8,6 +8,7 @@ import numpy as np
 HERE = os.path.dirname(os.path.abspath(__file__))
 ap = argparse.ArgumentParser()
 ap.add_argument('--tag', required=True)
+ap.add_argument('--model', default='bloom')
 ap.add_argument('--app', required=True)
 ap.add_argument('--budget', type=float, default=2.0, help='percent')
 ap.add_argument('--data', default=os.path.join(HERE, '..', 'data', 'sweep.json'))
@@ -15,13 +16,15 @@ ap.add_argument('--emulated', default='')
 ap.add_argument('--result-dir', default='results_polaris')
 a = ap.parse_args()
 root = os.environ['COSM_ROOT']
-D = json.load(open(a.data))[a.app]
-W = lambda k: 1 if k.endswith('output') else 16
+from sweepdata import Sweep
+SW = Sweep(a.data)
+D = SW.D[a.model][a.app]
+W = lambda k: SW.weight(a.model, k)
 mean_lat = {c: {k: (np.mean([v[r]['L'][k][0] for r in v]), np.mean([v[r]['L'][k][1] for r in v]))
                 for k in next(iter(v.values()))['L']} for c, v in D.items()}
 static = {c: 1000 / sum(W(k) * x[0] for k, x in m.items()) for c, m in mean_lat.items()}
 slow = {c: 100 * (1 - sum(W(k) * x[1] for k, x in m.items()) / sum(W(k) * x[0] for k, x in m.items())) for c, m in mean_lat.items()}
-best = max((c for c in static if slow[c] <= a.budget), key=lambda c: static[c])
+best = max((c for c in static if slow[c] <= max(a.budget, min(slow.values()))), key=lambda c: static[c])
 
 def expected(choice):
     return 1000 / sum(W(k) * mean_lat[c][k][0] for k, c in choice.items()) / static[best]

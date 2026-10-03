@@ -4,11 +4,12 @@ usage:
   COSM_ROOT=... python3 scripts/run_polaris.py --tag conv --seed 1 --app 10 --decodes 150
   COSM_ROOT=... python3 scripts/run_polaris.py --tag switch --seed 1 --schedule 10,22,51,sp70 --slice 40 --rounds 3"""
 import argparse, os, subprocess
-from workloads import WORKLOADS, ROTATIONS
+from workloads import MODELS, WORKLOADS, ROTATIONS
 
 ap = argparse.ArgumentParser()
 ap.add_argument('--tag', required=True)
 ap.add_argument('--seed', type=int, default=1)
+ap.add_argument('--model', default='bloom')
 ap.add_argument('--app', default='')
 ap.add_argument('--decodes', type=int, default=150)
 ap.add_argument('--schedule', default='')
@@ -31,7 +32,7 @@ for i, app in enumerate(sched):
     src, prefix, _ = WORKLOADS[app]
     variants = ','.join(f'{prefix}_r{r}.txt' for r in ROTATIONS)
     cmd = ['python3', 'simulations/simulator/Simulator_polaris.py',
-           '--experiment-name', name, '--model', 'bloom_sd', '--N', '1024', '--pipeline-block-size', '4194304', '--pim-type', '1',
+           '--experiment-name', name, '--model', MODELS[a.model][0], '--N', '1024', '--pipeline-block-size', '4194304', '--pim-type', '1',
            '--cpu-trace', f'{prefix}_ra.txt', '--num-expected-insts', '34699', '--trace-type', 'commandreg',
            '--pim-task-length', '128', '--pim-task-length-min', '8', '--pim-bitwidth', '16',
            '--pim-arbiter', 'PIMArbiter_CPUFirstO3Predict', '--cpu-scheduler', 'PIMScheduler_Cluster',

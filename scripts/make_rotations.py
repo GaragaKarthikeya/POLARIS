@@ -8,7 +8,7 @@ tdir = os.path.join(root, 'simulations', 'traces')
 for tag, (src, prefix, step) in WORKLOADS.items():
     lines = open(os.path.join(tdir, src)).read().splitlines()
     n = len(lines)
-    for i, ch in enumerate('abcdefg'):
+    for i, ch in enumerate('abcde'):
         k = i * step if step else i * n // 7
         with open(os.path.join(tdir, f'{prefix}_r{ch}.txt'), 'w') as f:
             f.write('\n'.join(lines[k:] + lines[:k]) + '\n')

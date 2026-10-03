@@ -12,10 +12,10 @@ import numpy as np
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.join(HERE, '..', 'polaris'))
 from polaris_agent import Agent, CONFIGS
-from workloads import WORKLOADS
 
 ap = argparse.ArgumentParser()
 ap.add_argument('--data', default=os.path.join(HERE, '..', 'data', 'sweep.json'))
+ap.add_argument('--model', default='bloom')
 ap.add_argument('--app', default='')
 ap.add_argument('--schedule', default='')
 ap.add_argument('--slice', type=int, default=40, help='decode steps per OS time slice')
@@ -27,9 +27,12 @@ ap.add_argument('--mode', default='ts')
 ap.add_argument('--agent-kw', default='', help="extra Agent kwargs 'k=v,...'")
 ap.add_argument('--out', default='')
 a = ap.parse_args()
-D = json.load(open(a.data))
+from sweepdata import Sweep
+SW = Sweep(a.data)
+MODEL = a.model
+D = SW.D[MODEL]
 KERNELS = sorted(next(iter(next(iter(D[next(iter(D))].values())).values()))['L'])
-W = {k: (1 if k.endswith('output') else 16) for k in KERNELS}
+W = {k: SW.weight(MODEL, k) for k in KERNELS}
 ROT = {t: {c: sorted(v) for c, v in D[t].items()} for t in D}     # rotations each setting has (a few runs crash in COSM)
 
 def expected(app, choice):
@@ -69,14 +72,14 @@ if __name__ == '__main__':
     with mp.get_context('fork').Pool(min(a.seeds, os.cpu_count())) as p:
         R = p.map(run, [(schedule, s) for s in range(1, a.seeds + 1)])
     static = {t: {c: expected(t, {k: c for k in KERNELS}) for c in CONFIGS if c in D[t]} for t in set(schedule)}
-    res = dict(schedule=schedule, budget=a.budget, mode=a.mode,
+    res = dict(model=a.model, schedule=schedule, budget=a.budget, mode=a.mode,
                thp=[[x[0] for x in r] for r in R], slow=[[x[1] for x in r] for r in R], believed=[[x[2] for x in r] for r in R],
                static={t: {c: v for c, v in s.items()} for t, s in static.items()})
-    out = a.out or os.path.join(HERE, '..', 'data', f'emulate_{a.mode}_{a.app or "switch"}_{a.budget:g}.json')
+    out = a.out or os.path.join(HERE, '..', 'data', 'emulate', f'{a.model}_{a.mode}_{a.app or "switch"}_{a.budget:g}.json')
     json.dump(res, open(out, 'w'))
     q = np.array(res['thp'])
     for t in sorted(set(schedule)):
-        ok = [c for c in static[t] if static[t][c][1] <= 100 * a.budget]
+        ok = [c for c in static[t] if static[t][c][1] <= max(100 * a.budget, min(v[1] for v in static[t].values()))]
         best = max(ok, key=lambda c: static[t][c][0])
         idx = [i for i, x in enumerate(schedule) if x == t]
         print(f'{t:5s} best static {best} {static[t][best][0]:.1f} | POLARIS first 10 {q[:, idx[:10]].mean():.1f}, last 20 {q[:, idx[-20:]].mean():.1f} '
