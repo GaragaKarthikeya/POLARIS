@@ -4,7 +4,7 @@ title: "POLARIS: Per-Kernel Online Tuning of Concurrent PIM/CPU Memory Controlle
 type: software
 version: 1.1.0
 date-released: "2026-10-03"
-doi: 10.5281/zenodo.23093491
+doi: 10.5281/zenodo.23093490
 license: MIT
 authors:
   - family-names: Garaga

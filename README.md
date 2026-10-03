@@ -1,6 +1,6 @@
 # POLARIS: Per-Kernel Online Tuning of Concurrent PIM/CPU Memory Controllers
 
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.23093491.svg)](https://doi.org/10.5281/zenodo.23093491)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.23093490.svg)](https://doi.org/10.5281/zenodo.23093490)
 
 This repository contains POLARIS and the scripts that reproduce every result in the letter
 *"POLARIS: Per-Kernel Online Tuning of Concurrent PIM/CPU Memory Controllers on Mobile Devices"*.
@@ -105,7 +105,7 @@ Department of Electronics and Communication Engineering, International Institute
 
 If you use this artifact, please cite it as:
 
-> K. Garaga and M. Rao, "POLARIS: Per-Kernel Online Tuning of Concurrent PIM/CPU Memory Controllers on Mobile Devices (artifact)," Zenodo, 2026. doi:10.5281/zenodo.23093491 (all versions)
+> K. Garaga and M. Rao, "POLARIS: Per-Kernel Online Tuning of Concurrent PIM/CPU Memory Controllers on Mobile Devices (artifact)," Zenodo, 2026. doi:10.5281/zenodo.23093490 (all versions; v1.1.0: doi:10.5281/zenodo.23113245)
 
 GitHub's "Cite this repository" button (from `CITATION.cff`) gives the same reference in BibTeX and APA.
 
